@@ -140,7 +140,8 @@ def job_persist_metrics():
                 rows = prom_instant(f'node_systemd_unit_state{{instance="{inst}:9100"}}')
                 for r in rows:
                     unit = r["metric"].get("name", "")
-                    if not any(w in unit for w in ("ssh", "nginx", "apache", "docker", "postgres", "mysql", "mariadb")):
+                    if not any(w in unit for w in ("ssh", "nginx", "apache", "docker", "postgres", "mysql", "mariadb",
+                                                           "smb", "samba", "nmb", "winbind", "sssd")):
                         continue
                     active = r["value"][1] == "1"
                     row = db.query(ServiceStatus).filter(

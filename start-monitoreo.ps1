@@ -15,31 +15,25 @@ if (-not (Test-Path ".env")) {
     Copy-Item ".env.example" ".env"
 }
 
-# 2) Asegurar que la base PostgreSQL local esté levantada
-$pgExists = docker ps -a --format "{{.Names}}" | Where-Object { $_ -eq $DbContainer }
-if (-not $pgExists) {
-    docker run -d --name $DbContainer `
-      -e POSTGRES_DB=monitoreo_srv `
-      -e POSTGRES_USER=postgres `
-      -e POSTGRES_PASSWORD=Abc123.. `
-      -p 5432:5432 `
-      postgres:16-alpine
+# 2) BD única: PostgreSQL nativo del host (servicio Windows). Sin contenedor.
+#    Si existe el contenedor antiguo mon-postgres-local, se elimina (datos ya migrados).
+docker rm -f mon-postgres-local 2>$null | Out-Null
+$svc = Get-Service -Name "postgresql*" | Select-Object -First 1
+if ($svc -and $svc.Status -ne "Running") {
+    Start-Service $svc.Name
 }
 
-# 3) Esperar a que PostgreSQL esté listo
+# 3) Esperar a que PostgreSQL nativo esté listo
 $ready = $false
 for ($i = 0; $i -lt 30; $i++) {
-    try {
-        docker exec $DbContainer pg_isready -U postgres -d monitoreo_srv | Out-Null
+    if (Test-NetConnection -ComputerName "127.0.0.1" -Port 5432 -WarningAction SilentlyContinue | Where-Object { $_.TcpTestSucceeded }) {
         $ready = $true
         break
     }
-    catch {
-        Start-Sleep -Seconds 2
-    }
+    Start-Sleep -Seconds 2
 }
 if (-not $ready) {
-    throw "PostgreSQL no quedó listo en tiempo esperado."
+    throw "PostgreSQL nativo no quedó listo en tiempo esperado."
 }
 
 # 4) Levantar el stack principal

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import api from '../api/client';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import api, { grafanaExploreLoki } from '../api/client';
 import { SeriesChart } from '../components/Chart';
 
 const RANGES = ['15m', '1h', '6h', '24h', '7d', '30d'];
@@ -30,6 +30,33 @@ function DiskUsage({ id }: { id: string }) {
             </tr>))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function ServerLogs({ id, hostname }: { id: string; hostname?: string }) {
+  const srvHost = hostname;
+  const [hours, setHours] = useState(6);
+  const [filter, setFilter] = useState('');
+  const [applied, setApplied] = useState('');
+  const { data, refetch, isFetching } = useQuery({
+    queryKey: ['logs', id, hours, applied],
+    queryFn: async () => (await api.get(`/api/servers/${id}/logs?hours=${hours}&limit=200&filtrar=${encodeURIComponent(applied)}`)).data,
+    placeholderData: keepPreviousData,
+  });
+  const lines: any[] = data?.lines ?? [];
+  return (
+    <div className="panel">
+      <div className="toolbar">
+        {srvHost && <a className="btn" href={grafanaExploreLoki(srvHost)} target="_blank" rel="noreferrer">Abrir en Grafana (Loki)</a>}
+        <span className="meta">Últimas:</span>
+        {[1, 6, 24].map(h => <button key={h} className="ghost" disabled={hours === h} onClick={() => setHours(h)}>{h}h</button>)}
+        <input placeholder="filtrar texto (ej. error)" value={filter} onChange={e => setFilter(e.target.value)} />
+        <button className="btn" onClick={() => { setApplied(filter); refetch(); }}>{isFetching ? 'Buscando...' : 'Buscar'}</button>
+      </div>
+      {lines.length === 0
+        ? <p className="empty">{data?.note ?? 'Sin registros.'}</p>
+        : <pre className="logs">{lines.map((l: any, i: number) => `[${l.unit}] ${l.line}`).join('\n')}</pre>}
     </div>
   );
 }
@@ -91,9 +118,12 @@ export function ServerDetail() {
       <TopApps id={id!} />
       <h2>Top carpetas por espacio</h2>
       <DiskUsage id={id!} />
+      <h2>Logs del sistema</h2>
+      <ServerLogs id={id!} hostname={srv?.hostname} />
       <h2>Servicios systemd</h2>
-      {services.length === 0 ? <p className="empty">Sin servicios supervisados o sin datos.</p> : (
+      {services.length === 0 ? <p className="empty">{svc?.note ?? 'Sin servicios supervisados o sin datos.'}</p> : (
         <div className="panel">
+          {svc?.synthetic && <div className="toolbar"><span className="badge warn">Datos de prueba</span></div>}
           <table className="grid">
             <thead><tr><th>Unidad</th><th>Estado</th><th>Actividad</th></tr></thead>
             <tbody>

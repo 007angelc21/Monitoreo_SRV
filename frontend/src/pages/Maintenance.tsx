@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import api from '../api/client';
+import api, { EXTERNAL } from '../api/client';
 
 function sevBadge(s: string) {
   const k = s === 'CRITICAL' ? 'crit' : s === 'WARNING' ? 'warn' : 'info';
@@ -42,6 +42,13 @@ export function Maintenance() {
         <Link className="btn" to="/vmware">Ver infraestructura VMware</Link>
       </div>
       <p className="meta">Alta de vCenters y reglas de alerta se gestionan vía API (`/api/docs`). Descubrimiento: `POST /api/vcenters/{'{id}'}/discover`.</p>
+      <h2>Herramientas externas</h2>
+      <div className="toolbar">
+        <a className="btn" href={`${EXTERNAL.grafana}/explore?orgId=1`} target="_blank" rel="noreferrer">Abrir Loki en Grafana</a>
+        <a className="btn" href={EXTERNAL.grafana} target="_blank" rel="noreferrer">Dashboards Grafana</a>
+        <a className="btn" href={`${EXTERNAL.prometheus}/targets`} target="_blank" rel="noreferrer">Targets Prometheus</a>
+        <a className="btn" href={EXTERNAL.alertmanager} target="_blank" rel="noreferrer">Alertmanager</a>
+      </div>
       <h2>Estado de salud</h2>
       {!health ? <p className="empty">Consultando...</p> : (
         <div className="cards">

@@ -72,7 +72,8 @@ def servicios(sid: str, db: Session = Depends(get_db), _=Depends(get_current_use
     if not s:
         raise HTTPException(404, "Servidor no encontrado")
     inst = (s.primary_ip or s.hostname)
-    watch = ["ssh", "nginx", "apache2", "docker", "postgresql", "mysql", "mariadb"]
+    watch = ["ssh", "nginx", "apache2", "docker", "postgresql", "mysql", "mariadb",
+             "smb", "samba", "nmb", "winbind", "sssd", "realmd"]
     try:
         rows = prom_instant(f'node_systemd_unit_state{{instance="{inst}:9100"}}')
     except Exception as e:
@@ -83,7 +84,21 @@ def servicios(sid: str, db: Session = Depends(get_db), _=Depends(get_current_use
         if any(w in name for w in watch):
             out.append({"unit": name, "state": r["metric"].get("state"),
                         "active": r["value"][1] == "1"})
-    return {"server_id": sid, "instance": inst, "services": out, "watch": watch}
+    if out:
+        return {"server_id": sid, "instance": inst, "services": out, "watch": watch,
+                "synthetic": False, "note": None}
+    if (s.hostname or "").startswith("demo-"):
+        demo = [
+            {"unit": "ssh.service", "state": "active", "active": True},
+            {"unit": "docker.service", "state": "active", "active": True},
+            {"unit": "postgresql.service", "state": "active", "active": True},
+            {"unit": "nginx.service", "state": "inactive", "active": False},
+            {"unit": "mysql.service", "state": "failed", "active": False},
+        ]
+        return {"server_id": sid, "instance": inst, "services": demo, "watch": watch,
+                "synthetic": True, "note": "Datos de prueba (demo). En producción viene de node_exporter."}
+    return {"server_id": sid, "instance": inst, "services": [], "watch": watch,
+            "synthetic": False, "note": "Sin datos: verifique node_exporter con colector systemd."}
 
 @router.get("/{sid}/diskusage")
 def disk_usage(sid: str, limit: int = 15, db: Session = Depends(get_db), _=Depends(get_current_user)):
@@ -115,6 +130,42 @@ def disk_usage(sid: str, limit: int = 15, db: Session = Depends(get_db), _=Depen
                 "note": "Datos de prueba (demo). En producción viene de disk-usage.sh."}
     return {"server_id": sid, "instance": inst, "top": [], "synthetic": False,
             "note": "Sin datos: despliegue disk-usage.sh (playbook install-node-exporter.yml)."}
+
+@router.get("/{sid}/logs")
+def server_logs(sid: str, hours: int = 6, limit: int = 200, filtrar: str = "",
+                db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Logs del servidor vía Loki (requiere promtail en el servidor).
+    Filtra por etiqueta host=hostname. `filtrar` = contains en LogQL."""
+    from fastapi import HTTPException
+    import urllib.request, urllib.parse, json
+    from datetime import datetime, timezone
+    s = db.query(Server).filter(Server.id == sid).first()
+    if not s:
+        raise HTTPException(404, "Servidor no encontrado")
+    q = f'{{host="{s.hostname}"}}'
+    if filtrar:
+        q += f' |= "{filtrar}"'
+    now_ns = int(datetime.now(timezone.utc).timestamp() * 1e9)
+    params = urllib.parse.urlencode({
+        "query": q, "limit": min(limit, 1000),
+        "start": now_ns - hours * 3600 * 10**9,
+        "end": now_ns,
+        "direction": "backward"})
+    try:
+        with urllib.request.urlopen(
+                f"http://loki:3100/loki/api/v1/query_range?{params}", timeout=15) as r:
+            data = json.load(r)["data"]["result"]
+    except Exception as e:
+        raise HTTPException(502, f"Loki no disponible o sin datos: {e}")
+    lines = []
+    for stream in data:
+        unit = stream.get("stream", {}).get("unit", "?")
+        for ts, line in stream.get("values", []):
+            lines.append({"ts": ts, "unit": unit, "line": line})
+    lines.sort(key=lambda x: x["ts"], reverse=True)
+    return {"server_id": sid, "hostname": s.hostname, "query": q,
+            "lines": lines[:min(limit, 1000)],
+            "note": None if lines else "Sin logs: despliegue promtail (playbook install-promtail.yml)."}
 
 @router.get("/{sid}/top")
 def top_apps(sid: str, limit: int = 10, db: Session = Depends(get_db), _=Depends(get_current_user)):

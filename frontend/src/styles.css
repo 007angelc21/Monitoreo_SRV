@@ -153,6 +153,17 @@ select, input[type=text], input[type=password], input:not([type]) {
 .login-card .btn { width: 100%; margin-top: 14px; padding: 9px; }
 .error { background: var(--crit-bg); color: var(--crit); border: 1px solid #f3c2c2; border-radius: 6px; padding: 8px 10px; margin-top: 12px; font-size: 13px; }
 .empty { color: var(--muted); font-style: italic; }
+pre.logs {
+  background: var(--navy);
+  color: #d7e3f0;
+  border-radius: 6px;
+  padding: 12px;
+  max-height: 420px;
+  overflow: auto;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
 @media (max-width: 640px) {
   .topbar { flex-wrap: wrap; }
   .page { padding: 12px; }

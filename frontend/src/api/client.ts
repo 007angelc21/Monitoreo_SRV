@@ -12,4 +12,21 @@ api.interceptors.response.use(r => r, e => {
   }
   return Promise.reject(e);
 });
+
+// Herramientas externas (sobrescribibles con VITE_GRAFANA_URL, etc.)
+export const EXTERNAL = {
+  grafana: import.meta.env.VITE_GRAFANA_URL || 'http://localhost:3001',
+  prometheus: import.meta.env.VITE_PROM_URL || 'http://localhost:9090',
+  alertmanager: import.meta.env.VITE_ALERTMANAGER_URL || 'http://localhost:9093',
+};
+
+export function grafanaExploreLoki(host: string) {
+  const q = encodeURIComponent(JSON.stringify({
+    datasource: 'Loki',
+    queries: [{ expr: `{host="${host}"}`, refId: 'A' }],
+    range: { from: 'now-6h', to: 'now' },
+  }));
+  return `${EXTERNAL.grafana}/explore?orgId=1&left=${q}`;
+}
+
 export default api;
