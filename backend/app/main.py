@@ -89,15 +89,15 @@ async def audit_mw(request: Request, call_next):
 
 @app.exception_handler(RateLimitExceeded)
 async def ratelimit_handler(request: Request, exc: RateLimitExceeded):
-    return JSONResponse(429, {"error": {"code": 429, "message": "Rate limit excedido", "details": {}}})
+    return JSONResponse({"error": {"code": 429, "message": "Rate limit excedido", "details": {}}}, status_code=429)
 
 @app.exception_handler(Exception)
 async def uniform_errors(request: Request, exc: Exception):
     from fastapi import HTTPException
     if isinstance(exc, HTTPException):
-        return JSONResponse(exc.status_code, {"error": {"code": exc.status_code, "message": exc.detail, "details": {}}})
+        return JSONResponse({"error": {"code": exc.status_code, "message": exc.detail, "details": {}}}, status_code=exc.status_code)
     log.error("unhandled", error=str(exc), path=request.url.path)
-    return JSONResponse(500, {"error": {"code": 500, "message": "Error interno", "details": {}}})
+    return JSONResponse({"error": {"code": 500, "message": "Error interno", "details": {}}}, status_code=500)
 
 from app.api import auth, servers, vcenters, alerts, metrics, links
 app.include_router(auth.router)

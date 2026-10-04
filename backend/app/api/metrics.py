@@ -21,7 +21,7 @@ def server_metrics(sid: str, range: str = Query("1h"), source: str = Query("auto
                    _=Depends(get_current_user)):
     """source=auto: Prometheus en vivo; si falla, histórico de PG.
     source=db: fuerza PG. source=prom: fuerza Prometheus."""
-    from datetime import timedelta, timezone
+    from datetime import datetime, timedelta, timezone
     from app.models.entities import MetricSample
     secs = RANGES.get(range, 3600)
     inst = _inst(sid)
@@ -37,7 +37,7 @@ def server_metrics(sid: str, range: str = Query("1h"), source: str = Query("auto
     try:
         cutoff = datetime.now(timezone.utc) - timedelta(seconds=secs)
         stored = {}
-        for m in ("cpu", "ram", "disk", "load1"):
+        for m in ("cpu", "ram", "disk", "load1", "net_rx", "net_tx"):
             rows = db.query(MetricSample).filter(
                 MetricSample.server_id == sid, MetricSample.metric == m,
                 MetricSample.ts >= cutoff).order_by(MetricSample.ts).all()
@@ -57,11 +57,15 @@ def server_metrics(sid: str, range: str = Query("1h"), source: str = Query("auto
             except Exception as e:
                 out[k] = {"error": str(e)}
             used[k] = "prom"
-        else:  # auto
+        else:  # auto: Prometheus; si falla O viene vacío, histórico de BD
             try:
-                out[k] = prom_range(query, secs)
-                used[k] = "prom"
+                res = prom_range(query, secs)
             except Exception:
+                res = []
+            if res:
+                out[k] = res
+                used[k] = "prom"
+            else:
                 out[k] = stored.get(k, [])
                 used[k] = "db"
     return {"server_id": sid, "instance": inst, "range": range, "source": used, "series": out}

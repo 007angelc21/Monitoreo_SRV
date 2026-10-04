@@ -16,11 +16,21 @@
           Description=Node Exporter
           [Service]
           User=node_exporter
-          ExecStart=/usr/local/bin/node_exporter --collector.systemd --collector.filesystem.mount-points-exclude='^/(sys|proc|dev|run)($|/)'
+          ExecStart=/usr/local/bin/node_exporter --collector.systemd --collector.textfile.directory=/var/lib/node_exporter/textfile_collector --collector.filesystem.mount-points-exclude='^/(sys|proc|dev|run)($|/)'
           Restart=always
           [Install]
           WantedBy=multi-user.target
     - name: Habilitar servicio
       systemd: {name: node_exporter, enabled: true, state: restarted, daemon_reload: true}
+    - name: Directorio textfile collector
+      file: {path: /var/lib/node_exporter/textfile_collector, state: directory, owner: node_exporter, group: node_exporter, mode: '0755'}
+    - name: Script top aplicaciones
+      copy: {src: "{{ playbook_dir }}/top-apps.sh", dest: /usr/local/bin/top-apps.sh, mode: '0755'}
+    - name: Cron top aplicaciones cada 2 min
+      cron: {name: top-apps, user: node_exporter, minute: "*/2", job: "TEXTFILE_DIR=/var/lib/node_exporter/textfile_collector /usr/local/bin/top-apps.sh"}
+    - name: Script uso de disco por carpeta
+      copy: {src: "{{ playbook_dir }}/disk-usage.sh", dest: /usr/local/bin/disk-usage.sh, mode: '0755'}
+    - name: Cron uso de disco diario 03:00
+      cron: {name: disk-usage, user: root, minute: "0", hour: "3", job: "TEXTFILE_DIR=/var/lib/node_exporter/textfile_collector DU_DEPTH=2 /usr/local/bin/disk-usage.sh && chown node_exporter:node_exporter /var/lib/node_exporter/textfile_collector/disk_usage.prom"}
     - name: UFW permitir solo Prometheus (ajusta IP)
       ufw: {rule: allow, port: 9100, src: "{{ prom_ip | default('10.0.0.0/8') }}"}

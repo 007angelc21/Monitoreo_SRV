@@ -84,3 +84,78 @@ def servicios(sid: str, db: Session = Depends(get_db), _=Depends(get_current_use
             out.append({"unit": name, "state": r["metric"].get("state"),
                         "active": r["value"][1] == "1"})
     return {"server_id": sid, "instance": inst, "services": out, "watch": watch}
+
+@router.get("/{sid}/diskusage")
+def disk_usage(sid: str, limit: int = 15, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Top carpetas por espacio (requiere disk-usage.sh + textfile en el servidor).
+    Solo tiempo real desde Prometheus; sin histórico."""
+    from fastapi import HTTPException
+    from app.collectors.prom import prom_instant
+    s = db.query(Server).filter(Server.id == sid).first()
+    if not s:
+        raise HTTPException(404, "Servidor no encontrado")
+    inst = (s.primary_ip or s.hostname)
+    try:
+        rows = prom_instant(f'topk({min(limit, 30)}, diskusage_bytes{{instance="{inst}:9100"}})')
+    except Exception as e:
+        raise HTTPException(502, f"Prometheus no disponible: {e}")
+    top = [{"path": r["metric"].get("path", "?"), "bytes": int(float(r["value"][1]))} for r in rows]
+    if top:
+        return {"server_id": sid, "instance": inst, "top": top, "synthetic": False, "note": None}
+    if (s.hostname or "").startswith("demo-"):
+        demo = [
+            {"path": "/var/lib/docker", "bytes": 18 * 1024**3},
+            {"path": "/var/log", "bytes": 6 * 1024**3},
+            {"path": "/opt/app", "bytes": 4 * 1024**3},
+            {"path": "/home", "bytes": 2 * 1024**3},
+            {"path": "/tmp", "bytes": 512 * 1024**2},
+            {"path": "/etc", "bytes": 96 * 1024**2},
+        ]
+        return {"server_id": sid, "instance": inst, "top": demo[:limit], "synthetic": True,
+                "note": "Datos de prueba (demo). En producción viene de disk-usage.sh."}
+    return {"server_id": sid, "instance": inst, "top": [], "synthetic": False,
+            "note": "Sin datos: despliegue disk-usage.sh (playbook install-node-exporter.yml)."}
+
+@router.get("/{sid}/top")
+def top_apps(sid: str, limit: int = 10, db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Top aplicaciones por CPU/memoria (requiere top-apps.sh + textfile en el servidor).
+    Solo tiempo real desde Prometheus; sin histórico."""
+    from fastapi import HTTPException
+    from app.collectors.prom import prom_instant
+    s = db.query(Server).filter(Server.id == sid).first()
+    if not s:
+        raise HTTPException(404, "Servidor no encontrado")
+    inst = (s.primary_ip or s.hostname)
+    try:
+        cpu = prom_instant(f'topk({min(limit, 20)}, topapp_cpu_percent{{instance="{inst}:9100"}})')
+        mem = prom_instant(f'topk({min(limit, 20)}, topapp_mem_percent{{instance="{inst}:9100"}})')
+        procs = prom_instant(f'topapp_processes{{instance="{inst}:9100"}}')
+    except Exception as e:
+        raise HTTPException(502, f"Prometheus no disponible: {e}")
+    by_app: dict[str, dict] = {}
+    for r in cpu:
+        by_app.setdefault(r["metric"]["app"], {}).update(cpu=float(r["value"][1]))
+    for r in mem:
+        by_app.setdefault(r["metric"]["app"], {}).update(mem=float(r["value"][1]))
+    for r in procs:
+        by_app.setdefault(r["metric"]["app"], {}).update(processes=int(float(r["value"][1])))
+    top = sorted(
+        ({"app": a, "cpu": v.get("cpu", 0), "mem": v.get("mem", 0), "processes": v.get("processes", 0)}
+         for a, v in by_app.items()),
+        key=lambda x: x["cpu"], reverse=True)[:limit]
+    if top:
+        return {"server_id": sid, "instance": inst, "top": top, "synthetic": False, "note": None}
+    if (s.hostname or "").startswith("demo-"):
+        # Datos de prueba deterministas SOLO para demo (validar UI sin agentes)
+        demo = [
+            {"app": "java", "cpu": 34.2, "mem": 28.5, "processes": 3},
+            {"app": "postgres", "cpu": 18.7, "mem": 22.1, "processes": 8},
+            {"app": "nginx", "cpu": 9.4, "mem": 3.2, "processes": 5},
+            {"app": "python", "cpu": 6.1, "mem": 5.8, "processes": 2},
+            {"app": "redis-server", "cpu": 2.3, "mem": 4.4, "processes": 1},
+            {"app": "node_exporter", "cpu": 0.4, "mem": 0.6, "processes": 1},
+        ]
+        return {"server_id": sid, "instance": inst, "top": demo[:limit], "synthetic": True,
+                "note": "Datos de prueba (demo). En producción viene de top-apps.sh."}
+    return {"server_id": sid, "instance": inst, "top": [], "synthetic": False,
+            "note": "Sin datos: despliegue top-apps.sh (playbook install-node-exporter.yml)."}

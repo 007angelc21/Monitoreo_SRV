@@ -106,6 +106,8 @@ INSTANT_QUERIES = {
     "ram": '100*(1-(node_memory_MemAvailable_bytes{{instance="{inst}:9100"}}/node_memory_MemTotal_bytes{{instance="{inst}:9100"}}))',
     "disk": '100*(1-(avg(node_filesystem_avail_bytes{{instance="{inst}:9100",fstype!~"tmpfs|overlay"}})/avg(node_filesystem_size_bytes{{instance="{inst}:9100",fstype!~"tmpfs|overlay"}})))',
     "load1": 'node_load1{{instance="{inst}:9100"}}',
+    "net_rx": 'sum(rate(node_network_receive_bytes_total{{instance="{inst}:9100"}}[5m]))',
+    "net_tx": 'sum(rate(node_network_transmit_bytes_total{{instance="{inst}:9100"}}[5m]))',
 }
 
 
