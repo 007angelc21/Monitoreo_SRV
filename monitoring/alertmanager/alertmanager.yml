@@ -1,0 +1,12 @@
+route:
+  receiver: backend
+  group_by: [alertname, instance]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 1h
+receivers:
+  - name: backend
+    webhook_configs:
+      - url: http://backend:8000/api/alerts/webhook
+        send_resolved: true
+        max_alerts: 50

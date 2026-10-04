@@ -1,0 +1,26 @@
+# Node Exporter en Ubuntu 24.04 (solo permite scrape desde Prometheus)
+- hosts: linux
+  become: true
+  tasks:
+    - name: Crear usuario node_exporter
+      user: {name: node_exporter, system: true, shell: /usr/sbin/nologin, create_home: false}
+    - name: Descargar node_exporter 1.8.2
+      unarchive: {src: https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz, dest: /opt, remote_src: true, creates: /opt/node_exporter-1.8.2.linux-amd64}
+    - name: Instalar binario
+      copy: {src: /opt/node_exporter-1.8.2.linux-amd64/node_exporter, dest: /usr/local/bin/node_exporter, mode: '0755', remote_src: true}
+    - name: Servicio systemd
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          [Service]
+          User=node_exporter
+          ExecStart=/usr/local/bin/node_exporter --collector.systemd --collector.filesystem.mount-points-exclude='^/(sys|proc|dev|run)($|/)'
+          Restart=always
+          [Install]
+          WantedBy=multi-user.target
+    - name: Habilitar servicio
+      systemd: {name: node_exporter, enabled: true, state: restarted, daemon_reload: true}
+    - name: UFW permitir solo Prometheus (ajusta IP)
+      ufw: {rule: allow, port: 9100, src: "{{ prom_ip | default('10.0.0.0/8') }}"}

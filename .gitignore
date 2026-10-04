@@ -1,0 +1,7 @@
+.env
+__pycache__/
+node_modules/
+dist/
+*.pyc
+monitoring/prometheus/targets/servers.json
+!monitoring/prometheus/targets/servers.json

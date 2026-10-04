@@ -1,0 +1,11 @@
+[
+  {
+    "targets": [
+      "node-exporter:9100"
+    ],
+    "labels": {
+      "server_id": "25d04019-96b7-4939-9467-bf16956f2f73",
+      "hostname": "monitor-host"
+    }
+  }
+]

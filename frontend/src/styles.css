@@ -1,0 +1,160 @@
+/* Monitoreo SRV — tema corporativo */
+:root {
+  --navy: #0f2a44;
+  --navy-2: #163a5c;
+  --accent: #1b6ec2;
+  --bg: #f1f4f8;
+  --card: #ffffff;
+  --border: #d9e1ea;
+  --text: #1e293b;
+  --muted: #64748b;
+  --ok: #15803d;
+  --ok-bg: #e7f6ec;
+  --warn: #b45309;
+  --warn-bg: #fef3e2;
+  --crit: #b91c1c;
+  --crit-bg: #fdecec;
+  --info-bg: #e8f1fb;
+  --radius: 8px;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+}
+/* Barra superior */
+.topbar {
+  background: linear-gradient(90deg, var(--navy), var(--navy-2));
+  color: #fff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.topbar .brand { font-weight: 700; font-size: 17px; letter-spacing: .3px; }
+.topbar .brand small { display: block; font-weight: 400; font-size: 11px; color: #b9c9da; }
+.topbar nav { display: flex; gap: 4px; margin-left: 8px; }
+.topbar nav a {
+  color: #d7e3f0;
+  text-decoration: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+.topbar nav a:hover, .topbar nav a.active { background: rgba(255,255,255,.14); color: #fff; }
+.topbar .spacer { flex: 1; }
+.topbar button {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.4);
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+.topbar button:hover { background: rgba(255,255,255,.12); }
+/* Contenido */
+.page { max-width: 1200px; margin: 0 auto; padding: 20px; }
+.page h1 { font-size: 22px; margin: 4px 0 12px; color: var(--navy); }
+.page h2 { font-size: 16px; margin: 22px 0 10px; color: var(--navy); border-bottom: 2px solid var(--border); padding-bottom: 4px; }
+.back { color: var(--accent); text-decoration: none; font-size: 13px; }
+/* Tarjetas resumen */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 8px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.card .t { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+.card .v { font-size: 28px; font-weight: 700; color: var(--navy); }
+.card.ok { border-left-color: var(--ok); } .card.ok .v { color: var(--ok); }
+.card.warn { border-left-color: var(--warn); } .card.warn .v { color: var(--warn); }
+.card.crit { border-left-color: var(--crit); } .card.crit .v { color: var(--crit); }
+/* Paneles y tablas */
+.panel { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 14px; }
+.panel h3 { margin: 0 0 10px; font-size: 14px; color: var(--navy); }
+table.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.grid th {
+  text-align: left;
+  background: var(--navy);
+  color: #fff;
+  padding: 8px 10px;
+  font-weight: 600;
+}
+table.grid th:first-child { border-radius: 6px 0 0 0; }
+table.grid th:last-child { border-radius: 0 6px 0 0; }
+table.grid td { padding: 7px 10px; border-bottom: 1px solid var(--border); }
+table.grid tr:nth-child(even) td { background: #f7fafc; }
+table.grid a { color: var(--accent); }
+/* Insignias de estado */
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.badge.ok { background: var(--ok-bg); color: var(--ok); }
+.badge.warn { background: var(--warn-bg); color: var(--warn); }
+.badge.crit { background: var(--crit-bg); color: var(--crit); }
+.badge.info { background: var(--info-bg); color: var(--accent); }
+.badge.muted { background: #eef1f5; color: var(--muted); }
+/* Barra de uso (datastores) */
+.usagerow { display: flex; gap: 8px; align-items: center; }
+.usagerow .usage { flex: 1; }
+.usage { background: #e5eaf0; border-radius: 4px; height: 8px; min-width: 90px; overflow: hidden; }
+.usage > span { display: block; height: 100%; background: var(--accent); }
+.usage.high > span { background: var(--warn); }
+.usage.critical > span { background: var(--crit); }
+/* Controles */
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
+button.btn, .btn {
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-size: 13px;
+}
+button.btn:hover { filter: brightness(1.1); }
+button.btn:disabled { background: var(--navy); border-color: var(--navy); opacity: .85; cursor: default; }
+button.ghost {
+  background: #fff;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+button.ghost:disabled { background: var(--navy); border-color: var(--navy); color: #fff; }
+select, input[type=text], input[type=password], input:not([type]) {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 13px;
+  background: #fff;
+}
+.meta { color: var(--muted); font-size: 13px; }
+.wide { width: 100%; max-width: 420px; }
+.okmsg { color: var(--ok); }
+/* Login */
+.login-wrap { max-width: 380px; margin: 12vh auto; }
+.login-card { background: var(--card); border: 1px solid var(--border); border-top: 5px solid var(--navy); border-radius: var(--radius); padding: 26px; }
+.login-card h1 { margin: 0 0 2px; color: var(--navy); font-size: 20px; }
+.login-card p.sub { margin: 0 0 16px; color: var(--muted); font-size: 12px; }
+.login-card label { display: block; font-size: 12px; font-weight: 600; margin: 10px 0 4px; }
+.login-card input { width: 100%; }
+.login-card .btn { width: 100%; margin-top: 14px; padding: 9px; }
+.error { background: var(--crit-bg); color: var(--crit); border: 1px solid #f3c2c2; border-radius: 6px; padding: 8px 10px; margin-top: 12px; font-size: 13px; }
+.empty { color: var(--muted); font-style: italic; }
+@media (max-width: 640px) {
+  .topbar { flex-wrap: wrap; }
+  .page { padding: 12px; }
+  table.grid { font-size: 12px; }
+}

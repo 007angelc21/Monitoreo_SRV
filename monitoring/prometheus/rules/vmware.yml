@@ -1,0 +1,9 @@
+groups:
+  - name: vmware
+    interval: 1m
+    rules:
+      - alert: VcenterDown
+        expr: up{job="backend"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Backend caido: discovery vCenter detenido"}

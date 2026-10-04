@@ -1,0 +1,7 @@
+{"title": "Linux Overview", "uid": "linux-overview", "timezone": "browser",
+ "panels": [{"id": 1, "title": "CPU %", "type": "timeseries",
+  "targets": [{"expr": "100*(1-avg by (instance)(rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))"}]},
+  {"id": 2, "title": "RAM %", "type": "timeseries",
+  "targets": [{"expr": "100*(1-(node_memory_MemAvailable_bytes/node_memory_MemTotal_bytes))"}]},
+  {"id": 3, "title": "Disco %", "type": "timeseries",
+  "targets": [{"expr": "100*(1-(node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay\"}/node_filesystem_size_bytes))"}]}]}

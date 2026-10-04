@@ -1,0 +1,26 @@
+{$DOMAIN:localhost} {
+	# TLS interno/autofirmado para red interna. En prod con dominio público,
+	# Caddy emite Let's Encrypt automáticamente; con CA interna monte sus certs:
+	# tls /certs/fullchain.pem /certs/privkey.pem
+	tls internal
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Cookie
+	}
+
+	@appApi path /api/* /metrics /docs /openapi.json
+	handle @appApi {
+		reverse_proxy backend:8000
+	}
+	handle {
+		reverse_proxy frontend:80
+	}
+	log {
+		output stdout
+		format json
+	}
+}
