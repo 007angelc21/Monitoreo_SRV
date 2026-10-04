@@ -65,6 +65,9 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
+    # En Docker Engine (Linux) host.docker.internal requiere este mapeo;
+    # en Docker Desktop existe por defecto. Necesario para BD nativa del host.
+    extra_hosts: ["host.docker.internal:host-gateway"]
     env_file: [.env]
     environment:
       # BD única: Postgres nativo del host (ver nota superior).

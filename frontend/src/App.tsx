@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Link, NavLink, Navigate, useNavigate } from 'react-router-dom';
 import { Overview } from './pages/Overview';
 import { Maintenance } from './pages/Maintenance';
 import { Servers } from './pages/Servers';
@@ -22,10 +22,10 @@ function Shell() {
       <header className="topbar">
         <div className="brand">Monitoreo SRV<small>Linux + VMware vCenter</small></div>
         <nav>
-          <Link to="/">General</Link>
-          <Link to="/servers">Servidores</Link>
-          <Link to="/vmware">VMware</Link>
-          <Link to="/maintenance">Mantenimiento</Link>
+          <NavLink end to="/">General</NavLink>
+          <NavLink to="/servers">Servidores</NavLink>
+          <NavLink to="/vmware">VMware</NavLink>
+          <NavLink to="/maintenance">Mantenimiento</NavLink>
         </nav>
         <div className="spacer" />
         {logged && <button onClick={logout}>Cerrar sesión</button>}
